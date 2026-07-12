@@ -9,12 +9,8 @@ import {
 } from "../lib/pricingEngine";
 import { EQUIPMENT_LABELS, EQUIPMENT_TYPES, type EquipmentType } from "../lib/types";
 import { US_STATES } from "../lib/usStates";
-import { benchmarkRatePerMile } from "../lib/laneRates";
-import { usd, pct, usd2 } from "../lib/format";
-
-/** Width % of a value within a stacked bar (guards zero total). */
-const widthPct = (part: number, total: number) =>
-  total > 0 ? `${(part / total) * 100}%` : "0%";
+import { benchmarkRatePerMile, compareToBenchmark } from "../lib/laneRates";
+import { usd, pct, usd2, widthPct } from "../lib/format";
 
 export default function MarginCalculator() {
   const [shipperRate, setShipperRate] = useState(2000);
@@ -26,6 +22,7 @@ export default function MarginCalculator() {
 
   const benchmark = benchmarkRatePerMile({ originState, destState, equipment, miles });
   const shipperRpm = ratePerMile(shipperRate, miles);
+  const marketCmp = compareToBenchmark(shipperRpm, benchmark);
   const margin = marginBreakdown({ shipperRate, carrierPayout });
   const comparison = compareChains({ shipperRate, carrierPayout });
   const t = comparison.traditional;
@@ -101,9 +98,9 @@ export default function MarginCalculator() {
             />
             <Tile
               label="Shipper vs market"
-              value={`${shipperRpm >= benchmark ? "+" : ""}${(benchmark > 0 ? ((shipperRpm - benchmark) / benchmark) * 100 : 0).toFixed(0)}%`}
-              hint={shipperRpm <= benchmark ? "at/below market" : "above market"}
-              good={shipperRpm <= benchmark}
+              value={`${marketCmp.deltaPct >= 0 ? "+" : ""}${marketCmp.deltaPct.toFixed(0)}%`}
+              hint={marketCmp.verdict === "above" ? "above market" : `${marketCmp.verdict} market`}
+              good={marketCmp.verdict !== "above"}
             />
           </div>
         </Card>

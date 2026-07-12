@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import { PageHead } from "../components/ui";
 import { getQuotes, getCarriers } from "../lib/storage";
-import { marginBreakdown } from "../lib/pricingEngine";
-import { loadStatus } from "../lib/types";
+import { coverageStats, portfolioSummary } from "../lib/analytics";
 import { usd, pct } from "../lib/format";
 
 const tools = [
@@ -39,24 +38,9 @@ const tools = [
 ];
 
 export default function Dashboard() {
-  const quotes = getQuotes();
   const carriers = getCarriers();
-
-  const avgMarginPct =
-    quotes.length > 0
-      ? quotes.reduce(
-          (sum, q) =>
-            sum + marginBreakdown({ shipperRate: q.shipperPrice, carrierPayout: q.carrierPayout }).grossMarginPct,
-          0,
-        ) / quotes.length
-      : 0;
-
-  const totalMargin = quotes.reduce(
-    (sum, q) => sum + marginBreakdown({ shipperRate: q.shipperPrice, carrierPayout: q.carrierPayout }).grossMargin,
-    0,
-  );
-
-  const coveredCount = quotes.filter((q) => loadStatus(q) === "accepted").length;
+  const summary = portfolioSummary(getQuotes());
+  const coverage = coverageStats(getQuotes());
 
   return (
     <>
@@ -68,8 +52,8 @@ export default function Dashboard() {
       <div className="tiles">
         <div className="tile">
           <div className="label">Loads</div>
-          <div className="value">{quotes.length}</div>
-          <div className="hint">{coveredCount} covered · {quotes.length - coveredCount} open</div>
+          <div className="value">{coverage.total}</div>
+          <div className="hint">{coverage.covered} covered · {coverage.open} open</div>
         </div>
         <div className="tile">
           <div className="label">Carriers in network</div>
@@ -77,11 +61,11 @@ export default function Dashboard() {
         </div>
         <div className="tile">
           <div className="label">Avg margin</div>
-          <div className="value good">{pct(avgMarginPct)}</div>
+          <div className="value good">{pct(summary.avgMarginPct)}</div>
         </div>
         <div className="tile">
           <div className="label">Booked margin (saved loads)</div>
-          <div className="value">{usd(totalMargin)}</div>
+          <div className="value">{usd(summary.totalMargin)}</div>
         </div>
       </div>
 

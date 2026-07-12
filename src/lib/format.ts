@@ -18,3 +18,7 @@ export const usd2 = (n: number): string =>
 export const pct = (n: number): string => `${n.toFixed(1)}%`;
 
 export const num = (n: number): string => n.toLocaleString("en-US");
+
+/** CSS width % of a part within a total, for proportional bars. Guards zero. */
+export const widthPct = (part: number, total: number): string =>
+  total > 0 ? `${(part / total) * 100}%` : "0%";

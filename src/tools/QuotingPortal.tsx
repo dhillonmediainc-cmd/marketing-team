@@ -30,6 +30,9 @@ export default function QuotingPortal() {
   const [targetMarginPct, setTargetMarginPct] = useState(DEFAULT_TARGET_MARGIN_PCT);
 
   const [result, setResult] = useState<QuoteResult | null>(null);
+  // Benchmark snapshotted at quote time so the market verdict always matches the
+  // quote on screen, even if the user edits the lane before re-quoting.
+  const [quotedBench, setQuotedBench] = useState<ReturnType<typeof laneBenchmark> | null>(null);
   const [savedCount, setSavedCount] = useState(getQuotes().length);
   const [justSaved, setJustSaved] = useState(false);
 
@@ -51,6 +54,7 @@ export default function QuotingPortal() {
 
   const runQuote = () => {
     setResult(quoteShipperPrice({ miles, equipment, weightLbs, targetMarginPct }));
+    setQuotedBench(laneBenchmark({ originState, destState, equipment, miles }));
     setJustSaved(false);
   };
 
@@ -75,10 +79,10 @@ export default function QuotingPortal() {
     setJustSaved(true);
   };
 
-  const bench = laneBenchmark({ originState, destState, equipment, miles });
-  const comparison = result
-    ? compareToBenchmark(result.ratePerMileShipper, bench.ratePerMile)
-    : null;
+  const comparison =
+    result && quotedBench
+      ? compareToBenchmark(result.ratePerMileShipper, quotedBench.ratePerMile)
+      : null;
 
   return (
     <>
@@ -158,12 +162,12 @@ export default function QuotingPortal() {
                 <Tile label="Your margin" value={usd(result.margin)} hint={`${targetMarginPct}%`} />
               </div>
 
-              {comparison && (
+              {comparison && quotedBench && (
                 <div className={`callout${comparison.verdict === "above" ? " neutral" : ""} mt-16`}>
                   <strong>{verdictLabel[comparison.verdict]}</strong>{" "}
                   {comparison.verdict === "at"
-                    ? `— your ${usd2(result.ratePerMileShipper)}/mi is in line with the ~${usd2(bench.ratePerMile)}/mi market rate for this lane.`
-                    : `— your ${usd2(result.ratePerMileShipper)}/mi is ${Math.abs(comparison.deltaPct).toFixed(0)}% ${comparison.verdict} the ~${usd2(bench.ratePerMile)}/mi market rate for this lane (${usd(bench.total)} typical all-in).`}
+                    ? `— your ${usd2(result.ratePerMileShipper)}/mi is in line with the ~${usd2(quotedBench.ratePerMile)}/mi market rate for this lane.`
+                    : `— your ${usd2(result.ratePerMileShipper)}/mi is ${Math.abs(comparison.deltaPct).toFixed(0)}% ${comparison.verdict} the ~${usd2(quotedBench.ratePerMile)}/mi market rate for this lane (${usd(quotedBench.total)} typical all-in).`}
                 </div>
               )}
 

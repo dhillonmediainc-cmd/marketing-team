@@ -7,11 +7,7 @@ import {
   rateVsMarket,
   portfolioSummary,
 } from "../lib/analytics";
-import { usd, pct } from "../lib/format";
-
-/** Width % of a part within a total (guards zero). */
-const widthPct = (part: number, total: number) =>
-  total > 0 ? `${(part / total) * 100}%` : "0%";
+import { usd, pct, widthPct } from "../lib/format";
 
 export default function Insights() {
   const quotes = useMemo(() => getQuotes(), []);

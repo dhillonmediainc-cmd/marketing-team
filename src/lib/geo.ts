@@ -202,6 +202,3 @@ export function distanceMiles(
   if (!a || !b) return null;
   return Math.round(haversineMiles(a, b) * ROAD_CIRCUITY_FACTOR);
 }
-
-/** Sorted list of known "City, ST" strings — handy for datalist suggestions. */
-export const KNOWN_CITIES: string[] = Object.keys(CITY_COORDS).sort();
