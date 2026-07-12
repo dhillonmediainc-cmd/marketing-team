@@ -7,6 +7,9 @@ import {
   TRADITIONAL_BROKER_PCT,
   TRADITIONAL_DISPATCHER_PCT,
 } from "../lib/pricingEngine";
+import { EQUIPMENT_LABELS, EQUIPMENT_TYPES, type EquipmentType } from "../lib/types";
+import { US_STATES } from "../lib/usStates";
+import { benchmarkRatePerMile } from "../lib/laneRates";
 import { usd, pct, usd2 } from "../lib/format";
 
 /** Width % of a value within a stacked bar (guards zero total). */
@@ -17,7 +20,12 @@ export default function MarginCalculator() {
   const [shipperRate, setShipperRate] = useState(2000);
   const [carrierPayout, setCarrierPayout] = useState(1700);
   const [miles, setMiles] = useState(500);
+  const [originState, setOriginState] = useState("CA");
+  const [destState, setDestState] = useState("AZ");
+  const [equipment, setEquipment] = useState<EquipmentType>("dry_van");
 
+  const benchmark = benchmarkRatePerMile({ originState, destState, equipment, miles });
+  const shipperRpm = ratePerMile(shipperRate, miles);
   const margin = marginBreakdown({ shipperRate, carrierPayout });
   const comparison = compareChains({ shipperRate, carrierPayout });
   const t = comparison.traditional;
@@ -57,6 +65,23 @@ export default function MarginCalculator() {
               onChange={(e) => setMiles(Number(e.target.value) || 0)}
             />
           </Field>
+          <div className="row-2">
+            <Field label="Origin state">
+              <select value={originState} onChange={(e) => setOriginState(e.target.value)}>
+                {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label="Dest state">
+              <select value={destState} onChange={(e) => setDestState(e.target.value)}>
+                {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field label="Equipment">
+            <select value={equipment} onChange={(e) => setEquipment(e.target.value as EquipmentType)}>
+              {EQUIPMENT_TYPES.map((tp) => <option key={tp} value={tp}>{EQUIPMENT_LABELS[tp]}</option>)}
+            </select>
+          </Field>
           <p className="muted" style={{ fontSize: 12, margin: 0 }}>
             Comparison assumes a traditional broker spread of {TRADITIONAL_BROKER_PCT}%
             and a dispatcher fee of {TRADITIONAL_DISPATCHER_PCT}% on the remainder.
@@ -67,8 +92,19 @@ export default function MarginCalculator() {
           <div className="tiles">
             <Tile label="Your margin" value={usd(margin.grossMargin)} hint={pct(margin.grossMarginPct)} />
             <Tile label="Carrier take-home" value={usd(carrierPayout)} good />
-            <Tile label="Shipper rate / mile" value={usd2(ratePerMile(shipperRate, miles))} />
+            <Tile label="Shipper rate / mile" value={usd2(shipperRpm)} />
             <Tile label="Carrier rate / mile" value={usd2(ratePerMile(carrierPayout, miles))} />
+            <Tile
+              label="Market rate / mile"
+              value={usd2(benchmark)}
+              hint={`${originState}→${destState} · ${EQUIPMENT_LABELS[equipment]}`}
+            />
+            <Tile
+              label="Shipper vs market"
+              value={`${shipperRpm >= benchmark ? "+" : ""}${(benchmark > 0 ? ((shipperRpm - benchmark) / benchmark) * 100 : 0).toFixed(0)}%`}
+              hint={shipperRpm <= benchmark ? "at/below market" : "above market"}
+              good={shipperRpm <= benchmark}
+            />
           </div>
         </Card>
       </div>

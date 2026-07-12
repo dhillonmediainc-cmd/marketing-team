@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHead, Card, Tile, Field } from "../components/ui";
 import {
   quoteShipperPrice,
@@ -7,8 +7,16 @@ import {
 } from "../lib/pricingEngine";
 import { EQUIPMENT_LABELS, EQUIPMENT_TYPES, type EquipmentType, type Quote } from "../lib/types";
 import { US_STATES } from "../lib/usStates";
+import { distanceMiles } from "../lib/geo";
+import { laneBenchmark, compareToBenchmark } from "../lib/laneRates";
 import { saveQuote, newId, getQuotes } from "../lib/storage";
 import { usd, usd2 } from "../lib/format";
+
+const verdictLabel: Record<string, string> = {
+  below: "Below market",
+  at: "At market",
+  above: "Above market",
+};
 
 export default function QuotingPortal() {
   const [originCity, setOriginCity] = useState("Los Angeles");
@@ -17,12 +25,29 @@ export default function QuotingPortal() {
   const [destState, setDestState] = useState("AZ");
   const [equipment, setEquipment] = useState<EquipmentType>("dry_van");
   const [weightLbs, setWeightLbs] = useState(28000);
-  const [miles, setMiles] = useState(375);
+  const [miles, setMiles] = useState(430);
+  const [milesAuto, setMilesAuto] = useState(true);
   const [targetMarginPct, setTargetMarginPct] = useState(DEFAULT_TARGET_MARGIN_PCT);
 
   const [result, setResult] = useState<QuoteResult | null>(null);
   const [savedCount, setSavedCount] = useState(getQuotes().length);
   const [justSaved, setJustSaved] = useState(false);
+
+  // Auto-fill miles from city coordinates whenever the lane changes (unless the
+  // user has taken manual control of the miles field).
+  useEffect(() => {
+    if (!milesAuto) return;
+    const d = distanceMiles(originCity, originState, destCity, destState);
+    if (d !== null) setMiles(d);
+  }, [originCity, originState, destCity, destState, milesAuto]);
+
+  const recalcFromCities = () => {
+    const d = distanceMiles(originCity, originState, destCity, destState);
+    if (d !== null) {
+      setMiles(d);
+      setMilesAuto(true);
+    }
+  };
 
   const runQuote = () => {
     setResult(quoteShipperPrice({ miles, equipment, weightLbs, targetMarginPct }));
@@ -50,11 +75,17 @@ export default function QuotingPortal() {
     setJustSaved(true);
   };
 
+  const bench = laneBenchmark({ originState, destState, equipment, miles });
+  const comparison = result
+    ? compareToBenchmark(result.ratePerMileShipper, bench.ratePerMile)
+    : null;
+
   return (
     <>
       <PageHead title="Shipper Quoting Portal">
-        Give a shipper an instant, direct rate — no broker call. Quotes you save become
-        open loads in the matching tool.
+        Give a shipper an instant, direct rate — no broker call. Miles auto-calculate
+        from the lane, and every quote is checked against a market benchmark. Saved
+        quotes become open loads in the matching tool.
       </PageHead>
 
       <div className="grid grid-2">
@@ -88,9 +119,27 @@ export default function QuotingPortal() {
             <Field label="Weight (lbs)">
               <input type="number" min={0} value={weightLbs} onChange={(e) => setWeightLbs(Number(e.target.value) || 0)} />
             </Field>
-            <Field label="Miles">
-              <input type="number" min={0} value={miles} onChange={(e) => setMiles(Number(e.target.value) || 0)} />
-            </Field>
+            <div className="field">
+              <label>
+                Miles{" "}
+                <span className={`badge${milesAuto ? " good" : ""}`} style={{ marginLeft: 4 }}>
+                  {milesAuto ? "Auto" : "Manual"}
+                </span>
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  value={miles}
+                  onChange={(e) => { setMiles(Number(e.target.value) || 0); setMilesAuto(false); }}
+                />
+                {!milesAuto && (
+                  <button className="btn ghost" title="Recalculate from cities" onClick={recalcFromCities}>
+                    Auto
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
           <Field label="Target margin (%)">
             <input type="number" min={0} value={targetMarginPct} onChange={(e) => setTargetMarginPct(Number(e.target.value) || 0)} />
@@ -108,6 +157,16 @@ export default function QuotingPortal() {
                 <Tile label="Carrier payout" value={usd(result.carrierPayout)} />
                 <Tile label="Your margin" value={usd(result.margin)} hint={`${targetMarginPct}%`} />
               </div>
+
+              {comparison && (
+                <div className={`callout${comparison.verdict === "above" ? " neutral" : ""} mt-16`}>
+                  <strong>{verdictLabel[comparison.verdict]}</strong>{" "}
+                  {comparison.verdict === "at"
+                    ? `— your ${usd2(result.ratePerMileShipper)}/mi is in line with the ~${usd2(bench.ratePerMile)}/mi market rate for this lane.`
+                    : `— your ${usd2(result.ratePerMileShipper)}/mi is ${Math.abs(comparison.deltaPct).toFixed(0)}% ${comparison.verdict} the ~${usd2(bench.ratePerMile)}/mi market rate for this lane (${usd(bench.total)} typical all-in).`}
+                </div>
+              )}
+
               <div className="table-scroll mt-16">
                 <table>
                   <tbody>
