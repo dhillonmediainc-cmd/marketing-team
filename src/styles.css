@@ -111,6 +111,9 @@ h3 {
   background: var(--surface-1);
   border-bottom: 1px solid var(--hairline);
 }
+.brand-mark {
+  flex: 0 0 auto;
+}
 
 .brand-mark {
   display: flex;
@@ -138,7 +141,13 @@ h3 {
 .nav {
   display: flex;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.nav::-webkit-scrollbar {
+  display: none; /* Safari/Chrome — nav scrolls, no visible bar */
 }
 .nav a {
   padding: 7px 12px;
@@ -146,6 +155,7 @@ h3 {
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
 }
 .nav a:hover {
   background: var(--surface-2);
@@ -203,6 +213,11 @@ h3 {
 .grid {
   display: grid;
   gap: 18px;
+}
+/* Let grid items shrink below content width so inner overflow-x containers
+   (e.g. .table-scroll) actually clamp and scroll instead of widening the page. */
+.grid > * {
+  min-width: 0;
 }
 @media (min-width: 720px) {
   .grid-2 {
@@ -466,7 +481,7 @@ th.num {
 /* ------- Match list ------- */
 .match {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 12px 0;
