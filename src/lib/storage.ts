@@ -2,7 +2,7 @@
 // the browser, seeded on first run so the app is never empty.
 
 import type { Carrier, Quote } from "./types";
-import { SEED_CARRIERS } from "./seed";
+import { SEED_CARRIERS, SEED_QUOTES } from "./seed";
 
 const QUOTES_KEY = "freightdirect.quotes.v1";
 const CARRIERS_KEY = "freightdirect.carriers.v1";
@@ -33,7 +33,12 @@ export function newId(prefix: string): string {
 // --- Quotes (also serve as open loads for the matching tool) ----------------
 
 export function getQuotes(): Quote[] {
-  return read<Quote[]>(QUOTES_KEY, []);
+  const existing = read<Quote[] | null>(QUOTES_KEY, null);
+  if (existing === null) {
+    write(QUOTES_KEY, SEED_QUOTES);
+    return SEED_QUOTES;
+  }
+  return existing;
 }
 
 export function saveQuote(quote: Quote): Quote[] {

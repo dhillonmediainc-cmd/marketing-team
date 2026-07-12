@@ -6,6 +6,7 @@ const navItems = [
   { to: "/quote", label: "Quoting Portal", end: false },
   { to: "/loads", label: "Load Matching", end: false },
   { to: "/carrier", label: "Carrier Board", end: false },
+  { to: "/insights", label: "Insights", end: false },
 ];
 
 export default function Layout() {

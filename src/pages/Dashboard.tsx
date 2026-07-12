@@ -30,6 +30,12 @@ const tools = [
     title: "Carrier Board",
     desc: "The carrier's view — see fitting open loads and book directly, no dispatcher fee.",
   },
+  {
+    to: "/insights",
+    icon: "📈",
+    title: "Insights",
+    desc: "Portfolio analytics — margin by lane, coverage, and how your rates beat the market.",
+  },
 ];
 
 export default function Dashboard() {

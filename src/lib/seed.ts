@@ -1,7 +1,7 @@
-// Sample carriers so the Load-Matching tool isn't empty on first run.
-// In production these come from Astify's carrier network.
+// Sample carriers and loads so the tools aren't empty on first run.
+// In production these come from Astify's carrier network and real quotes.
 
-import type { Carrier } from "./types";
+import type { Carrier, Quote } from "./types";
 
 export const SEED_CARRIERS: Carrier[] = [
   {
@@ -57,5 +57,53 @@ export const SEED_CARRIERS: Carrier[] = [
     equipment: ["dry_van"],
     minRatePerMile: 1.9,
     reliabilityScore: 87,
+  },
+];
+
+// Sample loads (some covered) so matching, the carrier board, and insights have
+// content immediately. Prices follow the pricing engine (line haul by equipment
+// + fuel + ~15% margin). Dates are staggered over the last couple of weeks.
+const day = (n: number) =>
+  new Date(Date.now() - n * 86_400_000).toISOString();
+
+export const SEED_QUOTES: Quote[] = [
+  {
+    id: "seed-q1", createdAt: day(1),
+    originCity: "Los Angeles", originState: "CA", destCity: "Phoenix", destState: "AZ",
+    equipment: "dry_van", weightLbs: 28000, miles: 410,
+    shipperPrice: 1156, carrierPayout: 1005, targetMarginPct: 15, status: "open",
+  },
+  {
+    id: "seed-q2", createdAt: day(3),
+    originCity: "Houston", originState: "TX", destCity: "Dallas", destState: "TX",
+    equipment: "dry_van", weightLbs: 32000, miles: 240,
+    shipperPrice: 676, carrierPayout: 588, targetMarginPct: 15,
+    status: "accepted", assignedCarrierId: "c-astify-002", assignedCarrierName: "Great Plains Freight Inc",
+  },
+  {
+    id: "seed-q3", createdAt: day(4),
+    originCity: "Chicago", originState: "IL", destCity: "Indianapolis", destState: "IN",
+    equipment: "reefer", weightLbs: 40000, miles: 200,
+    shipperPrice: 679, carrierPayout: 590, targetMarginPct: 15,
+    status: "accepted", assignedCarrierId: "c-astify-003", assignedCarrierName: "Northwind Reefer Lines",
+  },
+  {
+    id: "seed-q4", createdAt: day(6),
+    originCity: "Atlanta", originState: "GA", destCity: "Charlotte", destState: "NC",
+    equipment: "flatbed", weightLbs: 46000, miles: 245,
+    shipperPrice: 859, carrierPayout: 747, targetMarginPct: 15,
+    status: "accepted", assignedCarrierId: "c-astify-004", assignedCarrierName: "Coastal Flatbed Co",
+  },
+  {
+    id: "seed-q5", createdAt: day(8),
+    originCity: "Denver", originState: "CO", destCity: "Salt Lake City", destState: "UT",
+    equipment: "dry_van", weightLbs: 30000, miles: 525,
+    shipperPrice: 1479, carrierPayout: 1286, targetMarginPct: 15, status: "open",
+  },
+  {
+    id: "seed-q6", createdAt: day(11),
+    originCity: "Seattle", originState: "WA", destCity: "Portland", destState: "OR",
+    equipment: "dry_van", weightLbs: 22000, miles: 175,
+    shipperPrice: 493, carrierPayout: 429, targetMarginPct: 15, status: "open",
   },
 ];
