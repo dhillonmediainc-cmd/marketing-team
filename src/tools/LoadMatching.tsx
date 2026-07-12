@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { PageHead, Card } from "../components/ui";
 import { getQuotes, getCarriers, deleteQuote, assignLoad, unassignLoad } from "../lib/storage";
 import { matchCarriers } from "../lib/matching";
-import { EQUIPMENT_LABELS, loadStatus, type Quote, type Carrier } from "../lib/types";
+import { EQUIPMENT_LABELS, STATUS_LABELS, loadStatus, isCovered, type Quote, type Carrier } from "../lib/types";
 import { usd, pct } from "../lib/format";
 
 export default function LoadMatching() {
@@ -11,7 +11,7 @@ export default function LoadMatching() {
   const [selectedId, setSelectedId] = useState<string | null>(quotes[0]?.id ?? null);
 
   const selected = quotes.find((q) => q.id === selectedId) ?? null;
-  const selectedCovered = selected ? loadStatus(selected) === "accepted" : false;
+  const selectedCovered = selected ? isCovered(selected) : false;
   const matches = useMemo(
     () => (selected ? matchCarriers(selected, carriers) : []),
     [selected, carriers],
@@ -67,11 +67,10 @@ export default function LoadMatching() {
                         {q.originCity}, {q.originState} → {q.destCity}, {q.destState}
                         <div className="muted" style={{ fontSize: 12 }}>
                           {q.miles} mi ·{" "}
-                          {loadStatus(q) === "accepted" ? (
-                            <span className="badge good">Covered · {q.assignedCarrierName}</span>
-                          ) : (
-                            <span className="badge">Open</span>
-                          )}
+                          <span className={`badge stage-${loadStatus(q)}`}>
+                            {STATUS_LABELS[loadStatus(q)]}
+                            {isCovered(q) && q.assignedCarrierName ? ` · ${q.assignedCarrierName}` : ""}
+                          </span>
                         </div>
                       </td>
                       <td>{EQUIPMENT_LABELS[q.equipment]}</td>

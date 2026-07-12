@@ -2,6 +2,7 @@
 // the browser, seeded on first run so the app is never empty.
 
 import type { Carrier, Quote } from "./types";
+import { loadStatus, nextStage, prevStage } from "./types";
 import { SEED_CARRIERS, SEED_QUOTES } from "./seed";
 
 const QUOTES_KEY = "freightdirect.quotes.v1";
@@ -53,24 +54,50 @@ export function deleteQuote(id: string): Quote[] {
   return quotes;
 }
 
-/** Assign a load to a carrier (accept it). */
+/** Assign a load to a carrier — moves it from open into the "booked" stage. */
 export function assignLoad(id: string, carrier: Carrier): Quote[] {
   const quotes = getQuotes().map((q) =>
     q.id === id
-      ? { ...q, status: "accepted" as const, assignedCarrierId: carrier.id, assignedCarrierName: carrier.name }
+      ? { ...q, status: "booked" as const, assignedCarrierId: carrier.id, assignedCarrierName: carrier.name }
       : q,
   );
   write(QUOTES_KEY, quotes);
   return quotes;
 }
 
-/** Return a load to the open pool. */
+/** Return a load to the open pool, clearing its carrier. */
 export function unassignLoad(id: string): Quote[] {
   const quotes = getQuotes().map((q) =>
     q.id === id
       ? { ...q, status: "open" as const, assignedCarrierId: undefined, assignedCarrierName: undefined }
       : q,
   );
+  write(QUOTES_KEY, quotes);
+  return quotes;
+}
+
+/** Advance a load one stage down the pipeline (booked → … → delivered). */
+export function advanceLoad(id: string): Quote[] {
+  const quotes = getQuotes().map((q) => {
+    if (q.id !== id) return q;
+    const next = nextStage(loadStatus(q));
+    return next ? { ...q, status: next } : q;
+  });
+  write(QUOTES_KEY, quotes);
+  return quotes;
+}
+
+/** Move a load back one stage; reverting to "open" also clears its carrier. */
+export function revertLoad(id: string): Quote[] {
+  const quotes = getQuotes().map((q) => {
+    if (q.id !== id) return q;
+    const prev = prevStage(loadStatus(q));
+    if (!prev) return q;
+    if (prev === "open") {
+      return { ...q, status: "open" as const, assignedCarrierId: undefined, assignedCarrierName: undefined };
+    }
+    return { ...q, status: prev };
+  });
   write(QUOTES_KEY, quotes);
   return quotes;
 }

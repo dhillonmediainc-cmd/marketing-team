@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { PageHead, Card } from "../components/ui";
 import { getQuotes, getCarriers, assignLoad } from "../lib/storage";
-import { loadStatus, EQUIPMENT_LABELS, type Quote, type Carrier } from "../lib/types";
+import { loadStatus, isCovered, STATUS_LABELS, EQUIPMENT_LABELS, type Quote, type Carrier } from "../lib/types";
 import { ratePerMile } from "../lib/pricingEngine";
 import { usd, usd2 } from "../lib/format";
 
@@ -19,7 +19,7 @@ export default function CarrierBoard() {
 
   const openLoads = quotes.filter((q) => loadStatus(q) === "open");
   const myLoads = quotes.filter(
-    (q) => loadStatus(q) === "accepted" && q.assignedCarrierId === carrierId,
+    (q) => isCovered(q) && q.assignedCarrierId === carrierId,
   );
 
   // Loads that fit this carrier's equipment, best lane-fit first.
@@ -106,21 +106,26 @@ export default function CarrierBoard() {
                 <thead>
                   <tr>
                     <th>Lane</th>
-                    <th>Equip</th>
+                    <th>Status</th>
                     <th className="num">Pay</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {myLoads.map((q) => (
-                    <tr key={q.id}>
-                      <td>
-                        {q.originCity}, {q.originState} → {q.destCity}, {q.destState}
-                        <div className="muted" style={{ fontSize: 12 }}>{q.miles} mi</div>
-                      </td>
-                      <td>{EQUIPMENT_LABELS[q.equipment]}</td>
-                      <td className="num">{usd(q.carrierPayout)}</td>
-                    </tr>
-                  ))}
+                  {myLoads.map((q) => {
+                    const s = loadStatus(q);
+                    return (
+                      <tr key={q.id}>
+                        <td>
+                          {q.originCity}, {q.originState} → {q.destCity}, {q.destState}
+                          <div className="muted" style={{ fontSize: 12 }}>
+                            {EQUIPMENT_LABELS[q.equipment]} · {q.miles} mi
+                          </div>
+                        </td>
+                        <td><span className={`badge stage-${s}`}>{STATUS_LABELS[s]}</span></td>
+                        <td className="num">{usd(q.carrierPayout)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

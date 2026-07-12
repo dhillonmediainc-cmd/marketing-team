@@ -6,7 +6,9 @@ import {
   marginByLane,
   rateVsMarket,
   portfolioSummary,
+  stageBreakdown,
 } from "../lib/analytics";
+import { STATUS_LABELS } from "../lib/types";
 import { usd, pct, widthPct } from "../lib/format";
 
 export default function Insights() {
@@ -15,6 +17,7 @@ export default function Insights() {
   const coverage = coverageStats(quotes);
   const lanes = marginByLane(quotes);
   const market = rateVsMarket(quotes);
+  const stages = stageBreakdown(quotes);
 
   const maxLaneMargin = Math.max(1, ...lanes.map((l) => l.totalMargin));
   const marketTotal = market.below + market.at + market.above;
@@ -84,6 +87,17 @@ export default function Insights() {
           <div className="chart-note">Below/at market = competitive for winning shippers.</div>
         </Card>
       </div>
+
+      <Card title="Shipment pipeline" sub="loads by stage">
+        <div className="pipeline">
+          {stages.map((s) => (
+            <div key={s.stage} className={`pipe-stage${s.count > 0 ? " active" : ""}`}>
+              <div className="count">{s.count}</div>
+              <div className="name">{STATUS_LABELS[s.stage]}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card title="Margin by lane" sub="total margin booked per state-to-state lane">
         {lanes.map((l) => (

@@ -4,6 +4,7 @@ import {
   marginByLane,
   rateVsMarket,
   portfolioSummary,
+  stageBreakdown,
 } from "./analytics";
 import type { Quote } from "./types";
 
@@ -19,7 +20,7 @@ const q = (over: Partial<Quote>): Quote => ({
 describe("coverageStats", () => {
   it("counts covered vs open and percent", () => {
     const s = coverageStats([
-      q({ status: "accepted" }),
+      q({ status: "delivered" }),
       q({ status: "open" }),
       q({}), // missing status -> open
     ]);
@@ -27,6 +28,12 @@ describe("coverageStats", () => {
     expect(s.covered).toBe(1);
     expect(s.open).toBe(2);
     expect(s.coveragePct).toBe(33);
+  });
+
+  it("treats the legacy 'accepted' status as covered (booked)", () => {
+    // Older saved loads used "accepted" before the pipeline existed.
+    const s = coverageStats([q({ status: "accepted" as unknown as Quote["status"] })]);
+    expect(s.covered).toBe(1);
   });
 
   it("is safe on an empty portfolio", () => {
@@ -53,6 +60,21 @@ describe("rateVsMarket", () => {
   it("buckets each load into below/at/above", () => {
     const dist = rateVsMarket([q({}), q({})]);
     expect(dist.below + dist.at + dist.above).toBe(2);
+  });
+});
+
+describe("stageBreakdown", () => {
+  it("counts loads at each stage in pipeline order", () => {
+    const rows = stageBreakdown([
+      q({ status: "open" }),
+      q({ status: "booked" }),
+      q({ status: "booked" }),
+      q({ status: "delivered" }),
+    ]);
+    expect(rows.map((r) => r.stage)).toEqual(["open", "booked", "dispatched", "in_transit", "delivered"]);
+    expect(rows.find((r) => r.stage === "booked")!.count).toBe(2);
+    expect(rows.find((r) => r.stage === "open")!.count).toBe(1);
+    expect(rows.find((r) => r.stage === "dispatched")!.count).toBe(0);
   });
 });
 

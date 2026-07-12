@@ -5,7 +5,7 @@
 
 import { marginBreakdown, ratePerMile } from "./pricingEngine";
 import { benchmarkRatePerMile, compareToBenchmark, type BenchmarkVerdict } from "./laneRates";
-import { loadStatus, type Quote } from "./types";
+import { isCovered, LOAD_STAGES, loadStatus, type LoadStatus, type Quote } from "./types";
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
@@ -18,7 +18,7 @@ export interface CoverageStats {
 
 export function coverageStats(quotes: Quote[]): CoverageStats {
   const total = quotes.length;
-  const covered = quotes.filter((q) => loadStatus(q) === "accepted").length;
+  const covered = quotes.filter(isCovered).length;
   const open = total - covered;
   return {
     total,
@@ -26,6 +26,14 @@ export function coverageStats(quotes: Quote[]): CoverageStats {
     open,
     coveragePct: total > 0 ? Math.round((covered / total) * 100) : 0,
   };
+}
+
+/** Count of loads at each pipeline stage, in order. */
+export function stageBreakdown(quotes: Quote[]): { stage: LoadStatus; count: number }[] {
+  return LOAD_STAGES.map((stage) => ({
+    stage,
+    count: quotes.filter((q) => loadStatus(q) === stage).length,
+  }));
 }
 
 export interface LaneMargin {

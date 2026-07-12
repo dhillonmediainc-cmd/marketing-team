@@ -40,11 +40,46 @@ export interface Quote {
   assignedCarrierName?: string;
 }
 
-export type LoadStatus = "open" | "accepted";
+/** Full shipment lifecycle, in order. "open" = not yet covered. */
+export type LoadStatus = "open" | "booked" | "dispatched" | "in_transit" | "delivered";
 
-/** Coverage state of a load, defaulting older records without a status to open. */
+/** Pipeline order — index defines advance/revert direction. */
+export const LOAD_STAGES: LoadStatus[] = ["open", "booked", "dispatched", "in_transit", "delivered"];
+
+export const STATUS_LABELS: Record<LoadStatus, string> = {
+  open: "Open",
+  booked: "Booked",
+  dispatched: "Dispatched",
+  in_transit: "In transit",
+  delivered: "Delivered",
+};
+
+/**
+ * Coverage state of a load. Older records used "accepted" (now "booked") or had
+ * no status at all (treat as "open").
+ */
 export function loadStatus(q: Quote): LoadStatus {
-  return q.status ?? "open";
+  const s = q.status as string | undefined;
+  if (!s) return "open";
+  if (s === "accepted") return "booked"; // legacy value
+  return s as LoadStatus;
+}
+
+/** A load is "covered" once it has moved past the open pool. */
+export function isCovered(q: Quote): boolean {
+  return loadStatus(q) !== "open";
+}
+
+/** Next stage in the pipeline, or null at the final stage. */
+export function nextStage(s: LoadStatus): LoadStatus | null {
+  const i = LOAD_STAGES.indexOf(s);
+  return i >= 0 && i < LOAD_STAGES.length - 1 ? LOAD_STAGES[i + 1] : null;
+}
+
+/** Previous stage in the pipeline, or null at "open". */
+export function prevStage(s: LoadStatus): LoadStatus | null {
+  const i = LOAD_STAGES.indexOf(s);
+  return i > 0 ? LOAD_STAGES[i - 1] : null;
 }
 
 /** A carrier in Astify's network available to haul freight. */

@@ -30,6 +30,12 @@ const tools = [
     desc: "The carrier's view — see fitting open loads and book directly, no dispatcher fee.",
   },
   {
+    to: "/shipments",
+    icon: "📍",
+    title: "Shipments",
+    desc: "Track covered loads from booking through dispatch, transit, and delivery.",
+  },
+  {
     to: "/insights",
     icon: "📈",
     title: "Insights",
