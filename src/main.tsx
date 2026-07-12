@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import MarginCalculator from "./tools/MarginCalculator";
 import QuotingPortal from "./tools/QuotingPortal";
 import LoadMatching from "./tools/LoadMatching";
+import CarrierBoard from "./tools/CarrierBoard";
 import "./styles.css";
 
 // Hash router so the app works when opened from a static file/preview host.
@@ -18,6 +19,7 @@ const router = createHashRouter([
       { path: "calculator", element: <MarginCalculator /> },
       { path: "quote", element: <QuotingPortal /> },
       { path: "loads", element: <LoadMatching /> },
+      { path: "carrier", element: <CarrierBoard /> },
     ],
   },
 ]);

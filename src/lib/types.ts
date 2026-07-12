@@ -34,6 +34,17 @@ export interface Quote {
   /** What we intend to pay the carrier (line haul + fuel, before our margin). */
   carrierPayout: number;
   targetMarginPct: number;
+  /** Coverage state. Absent on older saved quotes — treat as "open". */
+  status?: LoadStatus;
+  assignedCarrierId?: string;
+  assignedCarrierName?: string;
+}
+
+export type LoadStatus = "open" | "accepted";
+
+/** Coverage state of a load, defaulting older records without a status to open. */
+export function loadStatus(q: Quote): LoadStatus {
+  return q.status ?? "open";
 }
 
 /** A carrier in Astify's network available to haul freight. */

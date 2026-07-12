@@ -48,6 +48,28 @@ export function deleteQuote(id: string): Quote[] {
   return quotes;
 }
 
+/** Assign a load to a carrier (accept it). */
+export function assignLoad(id: string, carrier: Carrier): Quote[] {
+  const quotes = getQuotes().map((q) =>
+    q.id === id
+      ? { ...q, status: "accepted" as const, assignedCarrierId: carrier.id, assignedCarrierName: carrier.name }
+      : q,
+  );
+  write(QUOTES_KEY, quotes);
+  return quotes;
+}
+
+/** Return a load to the open pool. */
+export function unassignLoad(id: string): Quote[] {
+  const quotes = getQuotes().map((q) =>
+    q.id === id
+      ? { ...q, status: "open" as const, assignedCarrierId: undefined, assignedCarrierName: undefined }
+      : q,
+  );
+  write(QUOTES_KEY, quotes);
+  return quotes;
+}
+
 // --- Carriers ---------------------------------------------------------------
 
 /** Returns carriers, seeding the store from SEED_CARRIERS on first ever run. */

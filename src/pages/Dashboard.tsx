@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { PageHead } from "../components/ui";
 import { getQuotes, getCarriers } from "../lib/storage";
 import { marginBreakdown } from "../lib/pricingEngine";
+import { loadStatus } from "../lib/types";
 import { usd, pct } from "../lib/format";
 
 const tools = [
@@ -23,6 +24,12 @@ const tools = [
     title: "Load Matching",
     desc: "Match open loads to Astify's carrier network by lane and equipment, ranked by fit.",
   },
+  {
+    to: "/carrier",
+    icon: "🚛",
+    title: "Carrier Board",
+    desc: "The carrier's view — see fitting open loads and book directly, no dispatcher fee.",
+  },
 ];
 
 export default function Dashboard() {
@@ -43,6 +50,8 @@ export default function Dashboard() {
     0,
   );
 
+  const coveredCount = quotes.filter((q) => loadStatus(q) === "accepted").length;
+
   return (
     <>
       <PageHead title="FreightDirect">
@@ -52,8 +61,9 @@ export default function Dashboard() {
 
       <div className="tiles">
         <div className="tile">
-          <div className="label">Open loads</div>
+          <div className="label">Loads</div>
           <div className="value">{quotes.length}</div>
+          <div className="hint">{coveredCount} covered · {quotes.length - coveredCount} open</div>
         </div>
         <div className="tile">
           <div className="label">Carriers in network</div>

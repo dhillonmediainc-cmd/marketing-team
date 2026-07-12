@@ -5,6 +5,7 @@ const navItems = [
   { to: "/calculator", label: "Margin Calculator", end: false },
   { to: "/quote", label: "Quoting Portal", end: false },
   { to: "/loads", label: "Load Matching", end: false },
+  { to: "/carrier", label: "Carrier Board", end: false },
 ];
 
 export default function Layout() {

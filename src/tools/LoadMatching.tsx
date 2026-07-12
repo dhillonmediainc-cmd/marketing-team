@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { PageHead, Card } from "../components/ui";
-import { getQuotes, getCarriers, deleteQuote } from "../lib/storage";
+import { getQuotes, getCarriers, deleteQuote, assignLoad, unassignLoad } from "../lib/storage";
 import { matchCarriers } from "../lib/matching";
-import { EQUIPMENT_LABELS, type Quote } from "../lib/types";
+import { EQUIPMENT_LABELS, loadStatus, type Quote, type Carrier } from "../lib/types";
 import { usd, pct } from "../lib/format";
 
 export default function LoadMatching() {
@@ -11,6 +11,7 @@ export default function LoadMatching() {
   const [selectedId, setSelectedId] = useState<string | null>(quotes[0]?.id ?? null);
 
   const selected = quotes.find((q) => q.id === selectedId) ?? null;
+  const selectedCovered = selected ? loadStatus(selected) === "accepted" : false;
   const matches = useMemo(
     () => (selected ? matchCarriers(selected, carriers) : []),
     [selected, carriers],
@@ -21,6 +22,9 @@ export default function LoadMatching() {
     setQuotes(next);
     if (selectedId === id) setSelectedId(next[0]?.id ?? null);
   };
+
+  const book = (id: string, carrier: Carrier) => setQuotes(assignLoad(id, carrier));
+  const release = (id: string) => setQuotes(unassignLoad(id));
 
   return (
     <>
@@ -61,7 +65,14 @@ export default function LoadMatching() {
                     >
                       <td>
                         {q.originCity}, {q.originState} → {q.destCity}, {q.destState}
-                        <div className="muted" style={{ fontSize: 12 }}>{q.miles} mi</div>
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          {q.miles} mi ·{" "}
+                          {loadStatus(q) === "accepted" ? (
+                            <span className="badge good">Covered · {q.assignedCarrierName}</span>
+                          ) : (
+                            <span className="badge">Open</span>
+                          )}
+                        </div>
                       </td>
                       <td>{EQUIPMENT_LABELS[q.equipment]}</td>
                       <td className="num">{usd(q.shipperPrice)}</td>
@@ -94,6 +105,12 @@ export default function LoadMatching() {
                     {usd(matches[0]?.projectedMargin ?? 0)} ({pct(matches[0]?.projectedMarginPct ?? 0)})
                   </strong>
                 </div>
+                {selectedCovered && selected && (
+                  <div className="callout mt-16" style={{ marginBottom: 12 }}>
+                    <strong>Covered</strong> by {selected.assignedCarrierName}.{" "}
+                    <button className="btn ghost" onClick={() => release(selected.id)}>Release load</button>
+                  </div>
+                )}
                 {matches.map((m) => (
                   <div className="match" key={m.carrier.id}>
                     <div className={`score-ring${m.score >= 70 ? " high" : ""}`}>{m.score}</div>
@@ -103,14 +120,25 @@ export default function LoadMatching() {
                         {m.equipmentMatch && m.laneMatch && (
                           <span className="badge good">Strong fit</span>
                         )}
+                        {selected?.assignedCarrierId === m.carrier.id && (
+                          <span className="badge good">Booked</span>
+                        )}
                       </div>
                       <div className="reasons">
                         {m.carrier.mcNumber} · {m.reasons.join(" · ")}
                       </div>
                     </div>
-                    <div style={{ textAlign: "right", fontSize: 12 }} className="muted">
-                      <div>Min ${m.carrier.minRatePerMile.toFixed(2)}/mi</div>
-                      <div>Rel. {m.carrier.reliabilityScore}</div>
+                    <div style={{ textAlign: "right", fontSize: 12 }}>
+                      {!selectedCovered ? (
+                        <button className="btn secondary" onClick={() => selected && book(selected.id, m.carrier)}>
+                          Book
+                        </button>
+                      ) : (
+                        <div className="muted">
+                          <div>Min ${m.carrier.minRatePerMile.toFixed(2)}/mi</div>
+                          <div>Rel. {m.carrier.reliabilityScore}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
